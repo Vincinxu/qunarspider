@@ -4,7 +4,9 @@ from lxml import etree
 from urllib.parse import quote
 import pymongo
 
+
 class QunarSpider():
+    #初始化
     def __init__(self, keyword, max_page, mongo_uri):
         self.keyword = keyword
         self.page = max_page
@@ -14,7 +16,9 @@ class QunarSpider():
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'
         }
-
+    
+    
+    #获取页面
     def get_page(self, page):
         try:
             url = 'https://piao.qunar.com/ticket/list_'+ quote(self.keyword) +'.html?keyword='+ quote(self.keyword) +'&page='+ str(page)
@@ -24,7 +28,9 @@ class QunarSpider():
             return None
         except RequestException:
             return None
-
+    
+    
+    #解析页面，提取数据
     def parse_page(self, html):
         text = etree.HTML(html)
         items = text.xpath('//div[contains(@class, "sight_item_detail")]')
@@ -40,17 +46,19 @@ class QunarSpider():
                 'soldnum': item.xpath('div[@class="sight_item_pop"]//span[@class="hot_num"]/text()'),
             }
 
-
+    
+    #保存到mongodb
     def save_to_mongodb(self, content):
         self.client = pymongo.MongoClient(self.mongo_uri)
         db = self.client[self.mongo_db]
         db[self.mongo_collection].insert(dict(content))
         print(content)
-
+    
+    #关闭mongodb
     def close(self):
         self.client.close()
 
-
+    #运行
     def run(self):
         try:
             for i in range(1, self.page + 1):
